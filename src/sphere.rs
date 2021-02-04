@@ -2,26 +2,32 @@
 #![warn(clippy::pedantic)]
 
 use crate::hit::{HitRecord, Hittable};
+use crate::material::Material;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
 use itertools::FoldWhile::{Continue, Done};
 use itertools::Itertools;
+use std::sync::Arc;
 
 pub struct Sphere {
   center: Vec3,
+  material: Arc<dyn Material>,
   radius: f32,
 }
 
 #[allow(dead_code)]
 impl Sphere {
-  pub fn new(center: Vec3, radius: f32) -> Self {
-    Self { center, radius }
+  pub fn new(center: &Vec3, radius: f32, material: Arc<dyn Material>) -> Self {
+    Self { center: *center, radius, material }
   }
   pub fn center(&self) -> &Vec3 {
     &self.center
   }
   pub fn radius(&self) -> f32 {
     self.radius
+  }
+  pub fn material(&self) -> Arc<dyn Material> {
+    self.material.clone()
   }
 }
 
@@ -40,7 +46,12 @@ impl Hittable for Sphere {
           if *scalar_length < scalar_from_ray_origin_max && *scalar_length > scalar_from_ray_origin_min {
             let point_at_parameter = ray.point_at_parameter(*scalar_length);
             let normal = (point_at_parameter - self.center()) / self.radius;
-            Done(Some(HitRecord::new(*scalar_length, &point_at_parameter, &normal)))
+            Done(Some(HitRecord::new(
+              *scalar_length,
+              &point_at_parameter,
+              &normal,
+              self.material(),
+            )))
           } else {
             Continue(None)
           }
